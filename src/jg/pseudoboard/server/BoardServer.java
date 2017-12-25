@@ -1,11 +1,18 @@
 package jg.pseudoboard.server;
 
+import java.io.IOException;
+
 public class BoardServer {
 	
 	private static int DEFAULT_PORT = 9365;
 	
 	public BoardServer(int port) {
-		new Server(port);
+		try {
+			new Server(port);
+		} catch (IOException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		}
 	}
 	
 	public static void main(String[] args) {
