@@ -6,6 +6,9 @@ import java.io.ObjectOutputStream;
 import java.net.Socket;
 
 import jg.pseudoboard.common.BoardElement;
+import jg.pseudoboard.common.MessageElement;
+import jg.pseudoboard.common.MessageTypeConverter;
+import jg.pseudoboard.common.MessageTypeConverter.MessageType;
 
 public class ClientThread implements Runnable {
 	
@@ -21,9 +24,12 @@ public class ClientThread implements Runnable {
 	private int clientID = -1;
 	private String username = "";
 	
-	public ClientThread(Socket socket, Server server) {
+	private UserManager userManager;
+	
+	public ClientThread(Socket socket, Server server, UserManager userManager) {
 		this.socket = socket;
 		this.server = server;
+		this.userManager = userManager;
 		
 		Logger.output("Connecting to new client...");
 		Logger.output("Creating input/output object streams...");
@@ -87,7 +93,48 @@ public class ClientThread implements Runnable {
 	private void handleServerMessage(BoardElement elt) {
 		handleServerMessage = new Thread("handleServerMessage") {
 			public void run() {
-				//TODO:
+				switch (MessageTypeConverter.getMessageType(elt.getID())) {
+				case CANVAS_LIST:
+					break;
+				case DISCONNECT:
+					disconnect();
+					break;
+				case LOGIN_EXISTING_USER:
+					String[] retUser = ((String) elt.getData()).split(";");
+					int retID = Integer.parseInt(retUser[1]);
+					String retName = retUser[0];
+					Logger.output("Trying to load existing user(" + retName + ", " + retID + ").");
+					if (userManager.checkExistingUser(retID, retName)) {
+						sendData(new MessageElement("", MessageType.LOGIN_SUCCESS));
+						setUserInfo(retName, retID);
+					} else {
+						sendData(new MessageElement("", MessageType.LOGIN_FAIL));
+					}
+					break;
+				case LOGIN_NEW_USER:
+					String[] newUser = ((String) elt.getData()).split(";");
+					int newID = Integer.parseInt(newUser[1]);
+					String newName = newUser[0];
+					Logger.output("Trying to setup new user (" + newName + ", " + newID + ").");
+					if (userManager.uniqueNewUser(newID, newName)) {
+						sendData(new MessageElement("", MessageType.LOGIN_SUCCESS));
+						setUserInfo(newName, newID);
+						userManager.addUser(newID, newName);
+					} else {
+						sendData(new MessageElement("", MessageType.LOGIN_FAIL));
+					}
+					break;
+				case NEW_CANVAS:
+					break;
+				case NONE:
+					break;
+				case OPEN_CANVAS:
+					break;
+				case USER_LIST:
+					break;
+				default:
+					break;
+				}
 			}
 		};
 		handleServerMessage.start();
@@ -109,6 +156,18 @@ public class ClientThread implements Runnable {
 			// TODO Auto-generated catch block
 			Logger.output(e);
 		}
+	}
+	
+	private void disconnect() {
+		Logger.output("User disconnecting (" + username + ", " + clientID + ")");
+		running = false;
+		try {
+			socket.close();
+		} catch (IOException e) {
+			// TODO Auto-generated catch block
+			Logger.output(e);
+		}
+		server.disconnectClient(this);
 	}
 	
 	public void setUserInfo(String username, int clientID) {

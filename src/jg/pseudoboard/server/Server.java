@@ -17,6 +17,7 @@ public class Server implements Runnable {
 	private volatile boolean running = false;
 	private Thread run, receive, broadcast;
 	
+	private UserManager userManager;
 	private List<ClientThread> clientThreads;
 	
 	private Server s;
@@ -30,7 +31,9 @@ public class Server implements Runnable {
 		Logger.output("--------------------------------");
 		Logger.output("Starting on port: " + port);
 		
+		
 		//initialize variables
+		userManager = new UserManager();
 		clientThreads = new ArrayList<ClientThread>();
 		this.port = port;
 		serverSocket = new ServerSocket(port);
@@ -65,7 +68,7 @@ public class Server implements Runnable {
 					try {
 						//listen for messages from clients
 						Socket socket = serverSocket.accept();
-						ClientThread clientThread = new ClientThread(socket, s);
+						ClientThread clientThread = new ClientThread(socket, s, userManager);
 						clientThreads.add(clientThread);
 					} catch (IOException e) {
 						//if not running, then no error - exception because socket closed

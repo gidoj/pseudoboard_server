@@ -12,7 +12,7 @@ public class PathManager {
 		USER_LIST, USER_INFO, CANVAS
 	}
 	
-	public static String getPath(FILE f, int clientID, int canvasID) {
+	public static String getPath(FILE f, String username, int canvasID) {
 		String path = "";
 		String end = "";
 		switch (f) {
