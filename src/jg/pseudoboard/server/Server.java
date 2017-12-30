@@ -7,6 +7,8 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Scanner;
 
+import jg.pseudoboard.common.BoardElement;
+
 public class Server implements Runnable {
 	
 	private int port;
@@ -76,7 +78,11 @@ public class Server implements Runnable {
 		receive.start();
 	}
 	
-	public void broadcast() {
+	public void updateCanvas() {
+		//Add stuff later
+	}
+	
+	public void broadcast(BoardElement elt) {
 		broadcast = new Thread("broadcast") {
 			public void run() {
 				//add stuff here later
