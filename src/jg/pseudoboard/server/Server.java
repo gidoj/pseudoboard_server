@@ -17,7 +17,8 @@ public class Server implements Runnable {
 	private volatile boolean running = false;
 	private Thread run, receive, broadcast;
 	
-	private UserManager userManager;
+	public UserManager userManager;
+	public CanvasManager canvasManager;
 	private List<ClientThread> clientThreads;
 	
 	private Server s;
@@ -34,6 +35,7 @@ public class Server implements Runnable {
 		
 		//initialize variables
 		userManager = new UserManager();
+		canvasManager = new CanvasManager();
 		clientThreads = new ArrayList<ClientThread>();
 		this.port = port;
 		serverSocket = new ServerSocket(port);
@@ -68,7 +70,7 @@ public class Server implements Runnable {
 					try {
 						//listen for messages from clients
 						Socket socket = serverSocket.accept();
-						ClientThread clientThread = new ClientThread(socket, s, userManager);
+						ClientThread clientThread = new ClientThread(socket, s);
 						clientThreads.add(clientThread);
 					} catch (IOException e) {
 						//if not running, then no error - exception because socket closed
@@ -99,7 +101,22 @@ public class Server implements Runnable {
 	}
 	
 	public void shutDown() {
-		//add stuff here later
+		Logger.output("Shutting down server....");
+		Logger.output("Disconnecting clients...");
+		for (int i = 0; i < clientThreads.size(); i++) {
+			clientThreads.get(i).disconnect();
+		}
+		running = false;
+		clientThreads.clear();
+		Logger.output("Closing socket...");
+		try {
+			serverSocket.close();
+		} catch (IOException e) {
+			Logger.output("Error closing serverSocket.");
+			Logger.output(e);
+		}
+		System.exit(0);
+		
 	}
 	
 	

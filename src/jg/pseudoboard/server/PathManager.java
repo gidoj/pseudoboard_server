@@ -12,7 +12,7 @@ public class PathManager {
 		USER_LIST, USER_INFO, CANVAS
 	}
 	
-	public static String getPath(FILE f, String username, int canvasID) {
+	public static String getPath(FILE f, String username, String canvasName) {
 		String path = "";
 		String end = "";
 		switch (f) {
@@ -20,8 +20,10 @@ public class PathManager {
 			end = "user_list.txt";
 			break;
 		case USER_INFO:
+			end = "users/user_" + username + ".txt";
 			break;
 		case CANVAS:
+			end = "canvas/canvas_" + canvasName + ".txt";
 			break;
 		default:
 			break;

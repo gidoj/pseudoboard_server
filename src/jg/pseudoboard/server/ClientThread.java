@@ -16,6 +16,8 @@ public class ClientThread implements Runnable {
 	private ObjectInputStream in;
 	private ObjectOutputStream out;
 	private Server server;
+	private ClientThread self;
+	
 	
 	private Thread run, handleServerMessage, handleCanvasUpdate;
 	
@@ -24,12 +26,12 @@ public class ClientThread implements Runnable {
 	private int clientID = -1;
 	private String username = "";
 	
-	private UserManager userManager;
+	private String canvasOpen = "";
 	
-	public ClientThread(Socket socket, Server server, UserManager userManager) {
+	public ClientThread(Socket socket, Server server) {
 		this.socket = socket;
 		this.server = server;
-		this.userManager = userManager;
+		self = this;
 		
 		Logger.output("Connecting to new client...");
 		Logger.output("Creating input/output object streams...");
@@ -104,7 +106,7 @@ public class ClientThread implements Runnable {
 					int retID = Integer.parseInt(retUser[1]);
 					String retName = retUser[0];
 					Logger.output("Trying to load existing user(" + retName + ", " + retID + ").");
-					if (userManager.checkExistingUser(retID, retName)) {
+					if (server.userManager.checkExistingUser(retID, retName)) {
 						sendData(new MessageElement("", MessageType.LOGIN_SUCCESS));
 						setUserInfo(retName, retID);
 					} else {
@@ -116,15 +118,28 @@ public class ClientThread implements Runnable {
 					int newID = Integer.parseInt(newUser[1]);
 					String newName = newUser[0];
 					Logger.output("Trying to setup new user (" + newName + ", " + newID + ").");
-					if (userManager.uniqueNewUser(newID, newName)) {
+					if (server.userManager.uniqueNewUser(newID, newName)) {
 						sendData(new MessageElement("", MessageType.LOGIN_SUCCESS));
 						setUserInfo(newName, newID);
-						userManager.addUser(newID, newName);
+						server.userManager.addUser(newID, newName);
 					} else {
 						sendData(new MessageElement("", MessageType.LOGIN_FAIL));
 					}
 					break;
 				case NEW_CANVAS:
+					String canvasInfo[] = ((String) elt.getData()).split(";");
+					String canvasName = canvasInfo[0];
+					int canvasWidth = Integer.parseInt(canvasInfo[1]);
+					int canvasHeight = Integer.parseInt(canvasInfo[2]);
+					int canvasBG = Integer.parseInt(canvasInfo[3]);
+					ServerCanvas sc = new ServerCanvas(canvasName);
+					Boolean success = sc.createNewCanvas(canvasName, canvasWidth, canvasHeight, canvasBG);
+					if (!success) sendData(new MessageElement((String) elt.getData(), MessageType.NEW_CANVAS_FAIL));
+					else {
+						server.canvasManager.addCanvas(canvasName, sc);
+						server.canvasManager.addUserToCanvas(canvasName, self);
+						sendData(new MessageElement((String) elt.getData(), MessageType.NEW_CANVAS));
+					}
 					break;
 				case NONE:
 					break;
@@ -143,13 +158,13 @@ public class ClientThread implements Runnable {
 	private void handleCanvasUpdate(BoardElement elt) {
 		handleCanvasUpdate = new Thread("handleCanvasUpdate") {
 			public void run() {
-				//add stuff later
+				//TODO: add stuff later
 			}
 		};
 		handleCanvasUpdate.start();
 	}
 	
-	private void sendData(BoardElement elt) {
+	public void sendData(BoardElement elt) {
 		try {
 			out.writeObject(elt);
 		} catch (IOException e) {
@@ -158,7 +173,7 @@ public class ClientThread implements Runnable {
 		}
 	}
 	
-	private void disconnect() {
+	public void disconnect() {
 		Logger.output("User disconnecting (" + username + ", " + clientID + ")");
 		running = false;
 		try {
@@ -168,6 +183,14 @@ public class ClientThread implements Runnable {
 			Logger.output(e);
 		}
 		server.disconnectClient(this);
+	}
+	
+	public void setOpenCanvas(String canvasName) {
+		canvasOpen = canvasName;
+	}
+	
+	public String getOpenCanvas() {
+		return canvasOpen;
 	}
 	
 	public void setUserInfo(String username, int clientID) {

@@ -38,7 +38,7 @@ public class UserManager {
 		//update user list file
 		String userString = username + ";" + id;
 		try {
-			FileWriter fw = new FileWriter(new File(PathManager.getPath(PathManager.FILE.USER_LIST, "", -1)), true);
+			FileWriter fw = new FileWriter(new File(PathManager.getPath(PathManager.FILE.USER_LIST, "", "")), true);
 			PrintWriter pw = new PrintWriter(fw);
 			pw.println(userString);
 			pw.close();
@@ -46,23 +46,32 @@ public class UserManager {
 			Logger.output("Error adding new user (" + username + ", " + id + ").");
 			Logger.output(e);
 		}
+		
+		//generate new file for user's canvas and other relevant information
+		File f = new File(PathManager.getPath(PathManager.FILE.USER_INFO, username, ""));
+		try {
+			f.createNewFile();
+		} catch (IOException e) {
+			Logger.output("Error creating new user file (" + username + ", " + id + ").");
+			Logger.output(e);
+		}
 	}
 	
 	private void loadUsers() {
-		List<String> userList = getFileLines(PathManager.FILE.USER_LIST, "", -1);
+		List<String> userList = getFileLines(PathManager.FILE.USER_LIST, "", "");
 		String[] user = null;
 		for (int i = 0; i < userList.size(); i++) {
 			user = userList.get(i).split(";");
-			Integer id = Integer.parseInt(user[0]);
-			String name = user[1];
+			String name = user[0];
+			Integer id = Integer.parseInt(user[1]);
 			userMap.put(name, id);
 		}
 	}
 	
-	private List<String> getFileLines(PathManager.FILE f, String username, int canvasID) {
+	private List<String> getFileLines(PathManager.FILE f, String username, String canvasName) {
 		List<String> lines = new ArrayList<String>();
 		try {
-			Scanner scanner = new Scanner(new File(PathManager.getPath(f, username, canvasID)));
+			Scanner scanner = new Scanner(new File(PathManager.getPath(f, username, canvasName)));
 			while (scanner.hasNextLine()) {
 				lines.add(scanner.nextLine());
 			}
