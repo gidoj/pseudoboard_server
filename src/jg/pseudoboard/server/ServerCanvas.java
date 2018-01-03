@@ -1,11 +1,13 @@
 package jg.pseudoboard.server;
 
 import java.io.File;
+import java.io.FileNotFoundException;
 import java.io.FileWriter;
 import java.io.IOException;
 import java.io.PrintWriter;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Scanner;
 
 import jg.pseudoboard.common.CanvasElement;
 
@@ -45,13 +47,40 @@ public class ServerCanvas {
 		return false;
 	}
 	
-	public String openCanvas(String username) {
-		return "";
+	public String openCanvas() {
+		String canvasFilepath = PathManager.getPath(PathManager.FILE.CANVAS, "", canvasName);
+		StringBuilder canvasString = new StringBuilder();
+		try {
+			Scanner scanner = new Scanner(new File(canvasFilepath));
+			while (scanner.hasNextLine()) {
+				String nextLine = scanner.nextLine();
+				canvasString.append(nextLine);
+			}
+			scanner.close();
+		} catch (FileNotFoundException e) {
+			Logger.output(e);
+		}
+		canvasString.deleteCharAt(canvasString.length()-1);
+		
+		String raw = canvasString.toString();
+		String[] rawArray = raw.split(";");
+		width = Integer.parseInt(rawArray[1]);
+		height = Integer.parseInt(rawArray[2]);
+		size = width*height;
+		bg = Integer.parseInt(rawArray[3]);
+		
+		String[] imageStrings = rawArray[4].split(",");
+		canvasStack = new int[size];
+		for (int i = 0; i < size; i++) {
+			canvasStack[i] = Integer.parseInt(imageStrings[i]);
+		}
+		
+		return raw;
 	}
 	
 	public void saveCanvas(String username) {
-		File f = new File(PathManager.getPath(PathManager.FILE.CANVAS, username, canvasName));
-		String name = "canvas_" + username + "-" + canvasName;
+		File f = new File(PathManager.getPath(PathManager.FILE.CANVAS, "", canvasName));
+		String name = canvasName;
 		String info = name + ";" + width + ";" + height + ";" + bg + ";";
 		//write string to canvas file
 		try {
@@ -96,14 +125,27 @@ public class ServerCanvas {
 	
 	public void addUser(ClientThread user) {
 		users.add(user);
+		Logger.output(user.getUsername() + " added to canvas: " + canvasName + " (" + numUsers() + " users).");
 	}
 	
 	public void removeUser(ClientThread user) {
 		users.remove(user);
+		Logger.output(user.getUsername() + " removed from canvas: " + canvasName + " (" + numUsers() + " users).");
 	}
 	
 	public int numUsers() {
 		return users.size();
+	}
+	
+	public String getCanvasString() {
+		String info = canvasName + ";" + width + ";" + height + ";" + bg + ";";
+		StringBuilder all = new StringBuilder();
+		all.append(info);
+		for (int i = 0; i < size; i++) {
+			all.append(Integer.toString(canvasStack[i]) + ",");
+		}
+		all.deleteCharAt(all.length()-1);
+		return all.toString();
 	}
 
 }

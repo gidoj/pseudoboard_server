@@ -23,7 +23,7 @@ public class PathManager {
 			end = "users/user_" + username + ".txt";
 			break;
 		case CANVAS:
-			end = "canvas/canvas_" + canvasName + ".txt";
+			end = "canvas/" + canvasName + ".txt";
 			break;
 		default:
 			break;

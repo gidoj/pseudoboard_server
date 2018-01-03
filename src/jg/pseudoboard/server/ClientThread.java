@@ -96,8 +96,6 @@ public class ClientThread implements Runnable {
 		handleServerMessage = new Thread("handleServerMessage") {
 			public void run() {
 				switch (MessageTypeConverter.getMessageType(elt.getID())) {
-				case CANVAS_LIST:
-					break;
 				case DISCONNECT:
 					disconnect();
 					break;
@@ -127,8 +125,9 @@ public class ClientThread implements Runnable {
 					}
 					break;
 				case NEW_CANVAS:
+					if (!canvasOpen.equals("")) server.canvasManager.removeUserFromCanvas(canvasOpen, self);
 					String canvasInfo[] = ((String) elt.getData()).split(";");
-					String canvasName = canvasInfo[0];
+					String canvasName = "canvas_" + username + "-" + canvasInfo[0];
 					int canvasWidth = Integer.parseInt(canvasInfo[1]);
 					int canvasHeight = Integer.parseInt(canvasInfo[2]);
 					int canvasBG = Integer.parseInt(canvasInfo[3]);
@@ -138,14 +137,32 @@ public class ClientThread implements Runnable {
 					else {
 						server.canvasManager.addCanvas(canvasName, sc);
 						server.canvasManager.addUserToCanvas(canvasName, self);
+						setOpenCanvas(canvasName);
 						sendData(new MessageElement((String) elt.getData(), MessageType.NEW_CANVAS));
 					}
 					break;
-				case NONE:
-					break;
 				case OPEN_CANVAS:
+					if (!canvasOpen.equals("")) server.canvasManager.removeUserFromCanvas(canvasOpen, self);
+					String canvasRequest = (String) elt.getData();
+					String canvasString = "";
+					if (server.canvasManager.canvasIsOpen(canvasRequest)) {
+						canvasString = server.canvasManager.getCanvasString(canvasRequest);
+					} else {
+						canvasString = server.canvasManager.openCanvas(canvasRequest);
+					}
+					server.canvasManager.addUserToCanvas(canvasRequest, self);
+					setOpenCanvas(canvasRequest);
+					sendData(new MessageElement(canvasString, MessageType.OPEN_CANVAS));
+					break;
+				case SAVE_CANVAS:
+					if (canvasOpen.equals("")) return;
+					server.canvasManager.saveCanvas(canvasOpen, username);
 					break;
 				case USER_LIST:
+					break;
+				case CANVAS_LIST:
+					String canvasList = server.canvasManager.getCanvasList(username);
+					sendData(new MessageElement(canvasList, MessageType.CANVAS_LIST));
 					break;
 				default:
 					break;
@@ -175,6 +192,7 @@ public class ClientThread implements Runnable {
 	
 	public void disconnect() {
 		Logger.output("User disconnecting (" + username + ", " + clientID + ")");
+		if (!canvasOpen.equals("")) server.canvasManager.removeUserFromCanvas(canvasOpen, self);
 		running = false;
 		try {
 			socket.close();
