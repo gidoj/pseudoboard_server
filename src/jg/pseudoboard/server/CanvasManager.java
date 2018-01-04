@@ -2,7 +2,9 @@ package jg.pseudoboard.server;
 
 import java.io.File;
 import java.io.FileNotFoundException;
+import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.Scanner;
 
@@ -12,6 +14,14 @@ public class CanvasManager {
 	
 	public CanvasManager() {
 		openCanvas = new HashMap<String, ServerCanvas>();
+	}
+	
+	public List<ServerCanvas> getOpenCanvases() {
+		List<ServerCanvas> canvasList = new ArrayList<ServerCanvas>();
+		for (String canvasName : openCanvas.keySet()) {
+			canvasList.add(openCanvas.get(canvasName));
+		}
+		return canvasList;
 	}
 	
 	public void addCanvas(String canvasName, ServerCanvas canvas) {
@@ -27,6 +37,10 @@ public class CanvasManager {
 		if (openCanvas.get(canvasName).numUsers() == 0) {
 			openCanvas.remove(canvasName);
 		}
+	}
+	
+	public void shareCanvas(String canvasName, String shareWith) {
+		openCanvas.get(canvasName).shareCanvas(shareWith);
 	}
 	
 	public void updateCanvas(String canvasName, int[] change) {

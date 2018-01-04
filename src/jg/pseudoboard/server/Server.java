@@ -59,8 +59,41 @@ public class Server implements Runnable {
 			//--add more control in future
 			String text = scanner.nextLine();
 			if (text.equals("/quit")) shutDown();
+			else if (text.equals("/users")) {
+				Logger.output("(~~~~~~~ONLINE USERS~~~~~~~)");
+				for (int i = 0; i < clientThreads.size(); i++) {
+					Logger.output(">> " + clientThreads.get(i).getUsername());
+				}
+				Logger.output("(~~~~~~~ONLINE USERS~~~~~~~)\n");
+			} else if (text.equals("/canvas")) {
+				List<ServerCanvas> openCanvases = canvasManager.getOpenCanvases();
+				Logger.output("(~~~~~~~OPEN CANVASES~~~~~~~)");
+				for (int i = 0; i < openCanvases.size(); i++) {
+					ServerCanvas curr = openCanvases.get(i);
+					Logger.output(">> " + curr.getName());
+					Logger.output("   |~~USERS~~|");
+					List<String> usernames = curr.getUsers();
+					for (int j = 0; j < curr.numUsers(); j++) {
+						Logger.output("      *" + usernames.get(j));
+					}
+				}
+				Logger.output("(~~~~~~~OPEN CANVASES~~~~~~~)");
+			} else if (text.equals("/help")) {
+				printHelp();
+			} else {
+				printHelp();
+			}
 		}
 		scanner.close();
+	}
+	
+	private void printHelp() {
+		Logger.output("(~~~~~~~HELP~~~~~~~)");
+		Logger.output(">> '/quit' to shut server down");
+		Logger.output(">> '/users' to list online users");
+		Logger.output(">> '/canvas' to list canvases open and which users are using them");
+		Logger.output(">> '/help' to show this help list");
+		Logger.output("(~~~~~~~HELP~~~~~~~)\n");
 	}
 	
 	private void receive() {

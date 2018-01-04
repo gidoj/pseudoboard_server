@@ -57,6 +57,25 @@ public class UserManager {
 		}
 	}
 	
+	public String getShareString(String user) {
+		String userList = PathManager.getPath(PathManager.FILE.USER_LIST, "", "");
+		StringBuilder userString = new StringBuilder();
+		try {
+			Scanner scanner = new Scanner(new File(userList));
+			while (scanner.hasNextLine()) {
+				String nextLine = scanner.nextLine();
+				String currName = nextLine.split(";")[0];
+				if (currName.equals(user)) continue;
+				userString.append(currName + ";");
+			}
+			scanner.close();
+		} catch (FileNotFoundException e) {
+			Logger.output(e);
+		}
+		if (userString.length() > 0) userString.deleteCharAt(userString.length()-1);
+		return userString.toString();
+	}
+	
 	private void loadUsers() {
 		List<String> userList = getFileLines(PathManager.FILE.USER_LIST, "", "");
 		String[] user = null;

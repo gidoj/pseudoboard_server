@@ -9,20 +9,24 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Scanner;
 
-import jg.pseudoboard.common.CanvasElement;
+import jg.pseudoboard.common.GraphicElement;
 
 public class ServerCanvas {
 	
-	List<ClientThread> users;
-	String canvasName;
+	private List<ClientThread> users;
+	private String canvasName;
 	//List<int[]> canvasStack; TODO: implement this later
-	int[] canvasStack;
+	private int[] canvasStack;
 	
-	int width;
-	int height;
-	int size;
+	private int width;
+	private int height;
+	private int size;
+
+	private int bg;
 	
-	int bg;
+	//values relating to graphic update
+	private int minX, minY, maxX, maxY;
+	private int[] graphicArray;
 	
 	public ServerCanvas(String canvasName) {
 		this.canvasName = canvasName;
@@ -40,7 +44,7 @@ public class ServerCanvas {
 		File f = new File(filename);
 		if (!f.exists()) {
 			canvasStack = new int[size];
-			for (int i = 0; i < size; i++) canvasStack[i] = -1;
+			for (int i = 0; i < size; i++) canvasStack[i] = 0;
 			return true;
 		}
 		
@@ -84,8 +88,8 @@ public class ServerCanvas {
 		String info = name + ";" + width + ";" + height + ";" + bg + ";";
 		//write string to canvas file
 		try {
-			f.createNewFile();//create file if doesn't exist
-			FileWriter canvasFW = new FileWriter(f, true);
+			boolean filecreated = f.createNewFile();//create file if doesn't exist
+			FileWriter canvasFW = new FileWriter(f, false);
 			PrintWriter canvasPW = new PrintWriter(canvasFW);
 			canvasPW.print(info);
 			
@@ -95,12 +99,14 @@ public class ServerCanvas {
 			}
 			canvasPW.close();
 			
-			//write canvas name to user file
-			File userFile = new File(PathManager.getPath(PathManager.FILE.USER_INFO, username, ""));
-			FileWriter userFW = new FileWriter(userFile, true);
-			PrintWriter userPW = new PrintWriter(userFW);
-			userPW.println(name);
-			userPW.close();
+			//write canvas name to user file only if canvas didn't already exist
+			if (filecreated) {
+				File userFile = new File(PathManager.getPath(PathManager.FILE.USER_INFO, username, ""));
+				FileWriter userFW = new FileWriter(userFile, true);
+				PrintWriter userPW = new PrintWriter(userFW);
+				userPW.println(name);
+				userPW.close();				
+			}
 		} catch (IOException e) {
 			// TODO Auto-generated catch block
 			e.printStackTrace();
@@ -108,18 +114,54 @@ public class ServerCanvas {
 
 	}
 	
+	public void shareCanvas(String shareWith) {
+		String userFile = PathManager.getPath(PathManager.FILE.USER_INFO, shareWith, "");
+		List<String> ownedCanvases = new ArrayList<String>();
+		try {
+			Scanner scanner = new Scanner(new File(userFile));
+			while (scanner.hasNextLine()) {
+				String nextLine = scanner.nextLine();
+				ownedCanvases.add(nextLine);
+			}
+			scanner.close();
+			
+			if (ownedCanvases.contains(canvasName)) return;
+			
+			FileWriter fw = new FileWriter(userFile, true);
+			PrintWriter pw = new PrintWriter(fw);
+			pw.println(canvasName);
+			pw.close();
+		} catch (IOException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		}
+	}
+	
 	public void updateCanvas(int[] canvas) {
 		//TODO: implement later - add to top of stack
 		//if stack size is > 5, collapse bottom two into one
 		//stack just one layer for now
-		for (int i = 0; i < size; i++) {
-			canvasStack[i] = canvas[i];
+		minX = canvas[0];
+		minY = canvas[1];
+		maxX = canvas[2];
+		maxY = canvas[3];
+		int graphicWidth = maxX - minX + 1;
+		int graphicHeight = maxY - minY + 1;
+		int graphicSize = graphicWidth * graphicHeight;
+		graphicArray = new int[graphicSize];
+		for (int y = 0; y < graphicHeight; y++) {
+			for (int x = 0; x < graphicWidth; x++) {
+				int updateVal = canvas[y*graphicWidth + x + 4];
+				graphicArray[y*graphicWidth + x] = updateVal;
+				if (updateVal == 0) continue;
+				canvasStack[(y+minY)*width + (x+minX)] = updateVal;
+			}
 		}
 	}
 	
 	public void broadcastUpdate() {
 		for (int i = 0; i < users.size(); i++) {
-			users.get(i).sendData(new CanvasElement(canvasStack));
+			users.get(i).sendData(new GraphicElement(minX, minY, maxX, maxY, graphicArray));
 		}
 	}
 	
@@ -135,6 +177,18 @@ public class ServerCanvas {
 	
 	public int numUsers() {
 		return users.size();
+	}
+	
+	public String getName() {
+		return canvasName;
+	}
+	
+	public List<String> getUsers() {
+		List<String> usernames = new ArrayList<String>();
+		for (int i = 0; i < numUsers(); i++) {
+			usernames.add(users.get(i).getUsername());
+		}
+		return usernames;
 	}
 	
 	public String getCanvasString() {

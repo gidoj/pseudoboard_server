@@ -60,10 +60,11 @@ public class ClientThread implements Runnable {
 				//check if error because client intentionally disconnected
 				if (!running) {
 					Logger.output("Client disconnected.");
-					return;
+					break;
 				}
-				Logger.output("Error reading stream: " + username + ", " + clientID);
-				Logger.output(e);
+				Logger.output("Error reading stream: " + username);
+				Logger.output("Forcing client disconnect: " + username);
+				disconnect();
 				break;
 			} catch (ClassNotFoundException e) {
 				Logger.output(e);
@@ -83,13 +84,6 @@ public class ClientThread implements Runnable {
 				break;
 			}
 		}
-		//no longer running - close socket
-		try {
-			socket.close();
-			Logger.output("Client (ID: " + clientID + ") socket closed.");
-		} catch (IOException e) {
-			Logger.output(e);
-		}
 	}
 	
 	private void handleServerMessage(BoardElement elt) {
@@ -103,7 +97,7 @@ public class ClientThread implements Runnable {
 					String[] retUser = ((String) elt.getData()).split(";");
 					int retID = Integer.parseInt(retUser[1]);
 					String retName = retUser[0];
-					Logger.output("Trying to load existing user(" + retName + ", " + retID + ").");
+					Logger.output("Trying to load existing user(" + retName + ").");
 					if (server.userManager.checkExistingUser(retID, retName)) {
 						sendData(new MessageElement("", MessageType.LOGIN_SUCCESS));
 						setUserInfo(retName, retID);
@@ -115,7 +109,7 @@ public class ClientThread implements Runnable {
 					String[] newUser = ((String) elt.getData()).split(";");
 					int newID = Integer.parseInt(newUser[1]);
 					String newName = newUser[0];
-					Logger.output("Trying to setup new user (" + newName + ", " + newID + ").");
+					Logger.output("Trying to setup new user (" + newName + ").");
 					if (server.userManager.uniqueNewUser(newID, newName)) {
 						sendData(new MessageElement("", MessageType.LOGIN_SUCCESS));
 						setUserInfo(newName, newID);
@@ -159,10 +153,16 @@ public class ClientThread implements Runnable {
 					server.canvasManager.saveCanvas(canvasOpen, username);
 					break;
 				case USER_LIST:
+					String userList = server.userManager.getShareString(username);
+					sendData(new MessageElement(userList, MessageType.USER_LIST));
 					break;
 				case CANVAS_LIST:
 					String canvasList = server.canvasManager.getCanvasList(username);
 					sendData(new MessageElement(canvasList, MessageType.CANVAS_LIST));
+					break;
+				case SHARE_CANVAS:
+					String shareWith = (String) elt.getData();
+					server.canvasManager.shareCanvas(canvasOpen, shareWith);
 					break;
 				default:
 					break;
@@ -175,7 +175,7 @@ public class ClientThread implements Runnable {
 	private void handleCanvasUpdate(BoardElement elt) {
 		handleCanvasUpdate = new Thread("handleCanvasUpdate") {
 			public void run() {
-				//TODO: add stuff later
+				server.canvasManager.updateCanvas(canvasOpen, (int[]) elt.getData());
 			}
 		};
 		handleCanvasUpdate.start();
@@ -191,11 +191,12 @@ public class ClientThread implements Runnable {
 	}
 	
 	public void disconnect() {
-		Logger.output("User disconnecting (" + username + ", " + clientID + ")");
+		Logger.output("User disconnecting (" + username + ")");
 		if (!canvasOpen.equals("")) server.canvasManager.removeUserFromCanvas(canvasOpen, self);
 		running = false;
 		try {
 			socket.close();
+			Logger.output("Client (" + username + ") socket closed.");
 		} catch (IOException e) {
 			// TODO Auto-generated catch block
 			Logger.output(e);
@@ -214,7 +215,7 @@ public class ClientThread implements Runnable {
 	public void setUserInfo(String username, int clientID) {
 		this.clientID = clientID;
 		this.username = username;
-		Logger.output("Client info set: " + username + ", " + clientID);
+		Logger.output("Client info set: " + username);
 	}
 	
 	public int getClientID() {
