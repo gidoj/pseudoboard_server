@@ -6,7 +6,7 @@ public class PathManager {
 	//once everything is moved to server.
 	
 	private static final String SERVER_PATH = "/home/joseph/Documents/pseudoboard/";
-	private static final String MAC_PATH = "/Users/josephgido/Documents/Tech_Stuff/Computer_Programming/pseudoboard/";
+	//private static final String MAC_PATH = "/Users/josephgido/Documents/Tech_Stuff/Computer_Programming/pseudoboard/";
 	
 	public enum FILE {
 		USER_LIST, USER_INFO, CANVAS
@@ -28,7 +28,7 @@ public class PathManager {
 		default:
 			break;
 		}
-		path = MAC_PATH + end;
+		path = SERVER_PATH + end;
 		return path;
 	}
 	

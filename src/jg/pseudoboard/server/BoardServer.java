@@ -4,7 +4,7 @@ import java.io.IOException;
 
 public class BoardServer {
 	
-	private static int DEFAULT_PORT = 21899;//CHANGE: 21898
+	private static int DEFAULT_PORT = 21898;
 	
 	public BoardServer(int port) {
 		try {
