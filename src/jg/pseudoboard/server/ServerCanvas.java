@@ -18,6 +18,8 @@ public class ServerCanvas {
 	//List<int[]> canvasStack; TODO: implement this later
 	private int[] canvasStack;
 	
+	private List<int[]> updateStack;
+	
 	private int width;
 	private int height;
 	private int size;
@@ -31,6 +33,7 @@ public class ServerCanvas {
 	public ServerCanvas(String canvasName) {
 		this.canvasName = canvasName;
 		users = new ArrayList<ClientThread>();
+		updateStack = new ArrayList<int[]>();
 	}
 	
 	public boolean createNewCanvas(String username, int width, int height, int bg) {
@@ -137,10 +140,12 @@ public class ServerCanvas {
 		}
 	}
 	
-	public void updateCanvas(int[] canvas) {
+	public void updateCanvas(int[] sectionUpdate) {
 		//TODO: implement later - add to top of stack
 		//if stack size is > 5, collapse bottom two into one
 		//stack just one layer for now
+		if (sectionUpdate != null) updateStack.add(sectionUpdate);
+		int[] canvas = updateStack.remove(0);
 		minX = canvas[0];
 		minY = canvas[1];
 		maxX = canvas[2];
@@ -157,6 +162,8 @@ public class ServerCanvas {
 				canvasStack[(y+minY)*width + (x+minX)] = updateVal;
 			}
 		}
+		
+		if (updateStack.size() > 0) updateCanvas(null); 
 	}
 	
 	public void broadcastUpdate() {
