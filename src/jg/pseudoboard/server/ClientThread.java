@@ -161,6 +161,7 @@ public class ClientThread implements Runnable {
 					sendData(new MessageElement(canvasList, MessageType.CANVAS_LIST));
 					break;
 				case SHARE_CANVAS:
+					server.canvasManager.saveCanvas(canvasOpen, username);
 					String shareWith = (String) elt.getData();
 					server.canvasManager.shareCanvas(canvasOpen, shareWith);
 					break;
